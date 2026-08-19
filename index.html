@@ -1,0 +1,1782 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>来信</title>
+    <!-- PDF.js & mammoth.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js">
+    </script>
+    <style>
+        /* ===== 完整样式（与之前的来信1.html完全一致） ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #e8e3dc;
+            transition: background 0.4s;
+            overflow: hidden;
+        }
+
+        title {
+            display: none;
+        }
+
+        #app {
+            width: 100%;
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(4px);
+            transition: background 0.4s, color 0.4s;
+            color: #1e1e2a;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* ===== 主题变体 ===== */
+        #app.theme-monochrome {
+            background: #1e1e2a;
+            color: #e0e0e0;
+        }
+        #app.theme-monochrome .upload-zone,
+        #app.theme-monochrome .pwd-wrapper,
+        #app.theme-monochrome .file-info,
+        #app.theme-monochrome .success-box,
+        #app.theme-monochrome .letter-view {
+            background: rgba(50, 50, 70, 0.85);
+            border-color: rgba(255, 255, 255, 0.12);
+            color: #e0e0e0;
+        }
+        #app.theme-monochrome .upload-btn,
+        #app.theme-monochrome .view-btn,
+        #app.theme-monochrome .unfold-btn {
+            background: #4a4a6a;
+        }
+        #app.theme-monochrome .upload-btn:hover,
+        #app.theme-monochrome .view-btn:hover,
+        #app.theme-monochrome .unfold-btn:hover {
+            background: #5e5e82;
+        }
+        #app.theme-monochrome .letter-paper {
+            background: #2a2a40;
+            color: #e0e0e0;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+        }
+        #app.theme-colorful {
+            background: #f2ebe4;
+        }
+        #app.theme-colorful .upload-zone {
+            background: rgba(255, 247, 240, 0.7);
+            border-color: #d5c4b0;
+        }
+        #app.theme-colorful .upload-btn,
+        #app.theme-colorful .view-btn,
+        #app.theme-colorful .unfold-btn {
+            background: #b58b6b;
+        }
+        #app.theme-colorful .upload-btn:hover,
+        #app.theme-colorful .view-btn:hover,
+        #app.theme-colorful .unfold-btn:hover {
+            background: #a07454;
+        }
+        #app.theme-colorful .letter-paper {
+            background: #fffcf7;
+            color: #3d352e;
+        }
+        #app.theme-love {
+            background: #fce4ec;
+        }
+        #app.theme-love .upload-zone {
+            background: rgba(255, 240, 245, 0.7);
+            border-color: #dba6b8;
+        }
+        #app.theme-love .upload-btn,
+        #app.theme-love .view-btn,
+        #app.theme-love .unfold-btn {
+            background: #c45a7a;
+        }
+        #app.theme-love .upload-btn:hover,
+        #app.theme-love .view-btn:hover,
+        #app.theme-love .unfold-btn:hover {
+            background: #b04868;
+        }
+        #app.theme-love .letter-paper {
+            background: #fff5f7;
+            color: #4a1a2a;
+        }
+
+        /* ===== 页面容器 ===== */
+        .page {
+            display: none;
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            animation: fadePage 0.5s ease;
+            overflow: hidden;
+        }
+        .page.active {
+            display: flex;
+            flex-direction: column;
+        }
+        @keyframes fadePage {
+            0% {
+                opacity: 0;
+                transform: scale(0.98);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* ===== 上传页 ===== */
+        #uploadPage {
+            padding: 5vh 5vw;
+            overflow-y: auto;
+            justify-content: center;
+        }
+        .app-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .app-title {
+            font-size: clamp(1.8rem, 5vw, 2.8rem);
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+        .app-title span {
+            font-weight: 300;
+            color: #888;
+        }
+        .app-sub {
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            color: #888;
+        }
+
+        .upload-zone {
+            border: 2px dashed #ccc;
+            border-radius: 1.5rem;
+            padding: 3rem 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s;
+            background: rgba(250, 248, 245, 0.5);
+            flex-shrink: 0;
+        }
+        .upload-zone:hover {
+            border-color: #888;
+            background: rgba(240, 235, 230, 0.5);
+        }
+        .upload-zone.dragover {
+            border-color: #5a7a9a;
+            background: rgba(220, 235, 250, 0.4);
+            transform: scale(1.01);
+        }
+        .upload-zone .main-text {
+            font-size: clamp(1.2rem, 3vw, 1.6rem);
+            font-weight: 500;
+        }
+        .upload-zone .sub-text {
+            font-size: clamp(0.8rem, 2vw, 1rem);
+            color: #888;
+            margin-top: 0.3rem;
+        }
+        .upload-zone .formats {
+            display: inline-flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .upload-zone .formats span {
+            background: rgba(0, 0, 0, 0.05);
+            padding: 0.2rem 1rem;
+            border-radius: 30px;
+            font-size: clamp(0.7rem, 1.5vw, 0.9rem);
+            font-weight: 500;
+            color: #555;
+        }
+        .upload-zone input[type="file"] {
+            display: none;
+        }
+
+        .file-info {
+            display: none;
+            align-items: center;
+            gap: 1rem;
+            background: rgba(245, 242, 240, 0.6);
+            border-radius: 1rem;
+            padding: 0.8rem 1.2rem;
+            margin-top: 1.2rem;
+            border: 1px solid #ddd;
+            flex-shrink: 0;
+        }
+        .file-info.show {
+            display: flex;
+        }
+        .file-info .f-detail {
+            flex: 1;
+            min-width: 0;
+        }
+        .file-info .f-name {
+            font-weight: 500;
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .file-info .f-size {
+            font-size: clamp(0.7rem, 1.5vw, 0.9rem);
+            color: #888;
+        }
+        .file-info .f-remove {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #aaa;
+            cursor: pointer;
+            padding: 0 0.4rem;
+            border-radius: 6px;
+            transition: 0.2s;
+            line-height: 1;
+        }
+        .file-info .f-remove:hover {
+            background: #f0e0e0;
+            color: #b33;
+        }
+
+        .sender-receiver {
+            margin-top: 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            flex-shrink: 0;
+        }
+        .sender-receiver .field-group {
+            flex: 1;
+            min-width: 150px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+        .sender-receiver .field-group label {
+            font-weight: 500;
+            font-size: clamp(0.85rem, 1.8vw, 1rem);
+            color: #888;
+        }
+        .sender-receiver .field-group input {
+            padding: 0.6rem 1rem;
+            border: 1.5px solid #ddd;
+            border-radius: 12px;
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            outline: none;
+            transition: 0.2s;
+            background: rgba(255, 255, 255, 0.6);
+            color: inherit;
+        }
+        .sender-receiver .field-group input:focus {
+            border-color: #7a8a9a;
+            box-shadow: 0 0 0 3px rgba(100, 120, 140, 0.15);
+        }
+
+        .password-section {
+            margin-top: 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.8rem;
+            flex-shrink: 0;
+        }
+        .password-section label {
+            font-weight: 500;
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+        }
+        .pwd-wrapper {
+            flex: 1;
+            min-width: 160px;
+            display: flex;
+            align-items: center;
+            background: rgba(245, 242, 240, 0.5);
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            padding: 0 0.8rem;
+            transition: 0.2s;
+        }
+        .pwd-wrapper:focus-within {
+            border-color: #7a8a9a;
+            box-shadow: 0 0 0 3px rgba(100, 120, 140, 0.15);
+        }
+        .pwd-wrapper input {
+            border: none;
+            background: transparent;
+            padding: 0.7rem 0;
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            width: 100%;
+            outline: none;
+            color: inherit;
+            font-family: monospace;
+        }
+        .pwd-wrapper .refresh-btn {
+            background: none;
+            border: none;
+            font-size: 1.3rem;
+            cursor: pointer;
+            color: #888;
+            padding: 0.2rem;
+            border-radius: 6px;
+            transition: 0.2s;
+            line-height: 1;
+        }
+        .pwd-wrapper .refresh-btn:hover {
+            background: rgba(0, 0, 0, 0.05);
+            color: #333;
+        }
+        .pwd-hint {
+            font-size: clamp(0.7rem, 1.5vw, 0.85rem);
+            color: #888;
+            width: 100%;
+            margin-top: 0.2rem;
+        }
+
+        .options-row {
+            margin-top: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            flex-shrink: 0;
+        }
+        .options-row .option-group {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+        .options-row .option-group label {
+            font-weight: 500;
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+        }
+        .options-row .option-group select {
+            padding: 0.5rem 1.2rem;
+            border-radius: 30px;
+            border: 1px solid #ddd;
+            background: rgba(255, 255, 255, 0.6);
+            font-size: clamp(0.8rem, 1.8vw, 1rem);
+            font-weight: 500;
+            outline: none;
+            cursor: pointer;
+            transition: 0.2s;
+            color: inherit;
+        }
+        .options-row .option-group select:focus {
+            border-color: #7a8a9a;
+            box-shadow: 0 0 0 3px rgba(100, 120, 140, 0.15);
+        }
+
+        .upload-btn {
+            width: 100%;
+            margin-top: 1.5rem;
+            padding: 0.9rem;
+            background: #4a5a6a;
+            color: #fff;
+            border: none;
+            border-radius: 16px;
+            font-size: clamp(1rem, 2.5vw, 1.3rem);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.25s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            letter-spacing: 0.3px;
+            flex-shrink: 0;
+        }
+        .upload-btn:hover:not(:disabled) {
+            background: #3a4a5a;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        }
+        .upload-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .upload-btn .spinner {
+            display: inline-block;
+            width: 1.2rem;
+            height: 1.2rem;
+            border: 2.5px solid rgba(255, 255, 255, 0.2);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .success-box {
+            display: none;
+            margin-top: 1.5rem;
+            background: rgba(220, 240, 230, 0.6);
+            border: 1px solid #aac;
+            border-radius: 16px;
+            padding: 1.2rem 1.5rem;
+            flex-shrink: 0;
+        }
+        .success-box.show {
+            display: block;
+        }
+        .success-box .s-title {
+            font-weight: 600;
+            font-size: clamp(0.95rem, 2vw, 1.2rem);
+            color: #2a5a4a;
+        }
+        .success-box .pwd-row {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin: 0.6rem 0 0.4rem;
+            flex-wrap: wrap;
+        }
+        .success-box .pwd-code {
+            font-size: clamp(1.4rem, 3vw, 2rem);
+            font-weight: 700;
+            font-family: monospace;
+            letter-spacing: 2px;
+            background: rgba(200, 230, 210, 0.5);
+            padding: 0.2rem 1rem;
+            border-radius: 12px;
+        }
+        .success-box .copy-btn {
+            background: none;
+            border: 1px solid #ccc;
+            padding: 0.3rem 1.2rem;
+            border-radius: 30px;
+            font-size: clamp(0.7rem, 1.5vw, 0.9rem);
+            cursor: pointer;
+            transition: 0.2s;
+            color: #444;
+        }
+        .success-box .copy-btn:hover {
+            background: rgba(0, 0, 0, 0.04);
+        }
+        .success-box .link-row {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-top: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .success-box .link-input {
+            flex: 1;
+            min-width: 150px;
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 0.4rem 0.8rem;
+            font-size: clamp(0.7rem, 1.5vw, 0.9rem);
+            word-break: break-all;
+            font-family: monospace;
+            color: inherit;
+        }
+        .success-box .link-row .copy-link-btn {
+            background: rgba(0, 0, 0, 0.04);
+            border: 1px solid #ccc;
+            padding: 0.4rem 1rem;
+            border-radius: 10px;
+            font-size: clamp(0.7rem, 1.5vw, 0.9rem);
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: 500;
+        }
+        .success-box .link-row .copy-link-btn:hover {
+            background: rgba(0, 0, 0, 0.08);
+        }
+        .success-box .address-info {
+            margin-top: 0.6rem;
+            font-size: clamp(0.8rem, 1.6vw, 0.95rem);
+            color: #2a5a4a;
+            border-top: 1px dashed #aac;
+            padding-top: 0.6rem;
+        }
+
+        .error-msg {
+            color: #b33;
+            font-size: clamp(0.8rem, 1.8vw, 1rem);
+            font-weight: 500;
+            padding: 0.6rem 1rem;
+            background: rgba(240, 220, 220, 0.5);
+            border-radius: 12px;
+            border: 1px solid #ecc;
+            display: none;
+            margin-top: 0.8rem;
+        }
+        .error-msg.show {
+            display: block;
+        }
+
+        /* ===== 查看页 ===== */
+        #viewPage {
+            padding: 0;
+            justify-content: flex-start;
+            position: relative;
+        }
+        .view-logo {
+            position: fixed;
+            top: 1.5rem;
+            left: 1.5rem;
+            z-index: 100;
+            font-size: clamp(1rem, 2vw, 1.4rem);
+            font-weight: 300;
+            letter-spacing: 2px;
+            color: rgba(0, 0, 0, 0.12);
+            pointer-events: none;
+            transition: color 0.4s;
+        }
+        #app.theme-monochrome .view-logo {
+            color: rgba(255, 255, 255, 0.12);
+        }
+        #app.theme-colorful .view-logo {
+            color: rgba(80, 60, 40, 0.15);
+        }
+        #app.theme-love .view-logo {
+            color: rgba(120, 40, 60, 0.15);
+        }
+
+        .letter-view {
+            width: 100%;
+            height: 100%;
+            background: rgba(245, 242, 240, 0.3);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            transition: background 0.4s;
+        }
+
+        .password-entry {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.2rem;
+            width: 90%;
+            max-width: 420px;
+            transition: opacity 0.5s ease;
+            z-index: 2;
+        }
+        .password-entry.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .password-entry label {
+            font-size: clamp(1.2rem, 3vw, 1.8rem);
+            font-weight: 500;
+            color: inherit;
+        }
+        .password-entry .input-group {
+            display: flex;
+            width: 100%;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .password-entry .input-group input {
+            flex: 1;
+            min-width: 180px;
+            padding: 0.8rem 1.2rem;
+            border: 1.5px solid #ddd;
+            border-radius: 14px;
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            font-family: monospace;
+            outline: none;
+            transition: 0.2s;
+            background: rgba(255, 255, 255, 0.6);
+            color: inherit;
+        }
+        .password-entry .input-group input:focus {
+            border-color: #7a8a9a;
+            box-shadow: 0 0 0 3px rgba(100, 120, 140, 0.15);
+        }
+        .password-entry .unfold-btn {
+            padding: 0.8rem 2.5rem;
+            background: #4a5a6a;
+            color: #fff;
+            border: none;
+            border-radius: 40px;
+            font-size: clamp(1rem, 2.5vw, 1.2rem);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.25s;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        }
+        .password-entry .unfold-btn:hover {
+            background: #3a4a5a;
+            transform: scale(1.03);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        }
+
+        /* ===== 信纸 ===== */
+        .letter-paper {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            background: #fffcf7;
+            box-shadow: inset 0 2px 20px rgba(0, 0, 0, 0.02);
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            pointer-events: none;
+            overflow: hidden;
+            color: #1e1e2a;
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            line-height: 1.7;
+            align-items: center;
+        }
+        .letter-paper.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* 工具栏（右下角） */
+        .toolbar {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            z-index: 100;
+            display: flex;
+            gap: 0.4rem;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(8px);
+            border-radius: 40px;
+            padding: 0.3rem 0.6rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            opacity: 0;
+            transition: opacity 0.5s ease 0.5s;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .letter-paper.open .toolbar {
+            opacity: 1;
+        }
+        .toolbar button {
+            min-width: 2.2rem;
+            height: 2.2rem;
+            border-radius: 30px;
+            border: none;
+            background: transparent;
+            color: #1e1e2a;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 0.6rem;
+            white-space: nowrap;
+        }
+        .toolbar button:hover {
+            background: rgba(0, 0, 0, 0.06);
+        }
+        .toolbar button:active {
+            background: rgba(0, 0, 0, 0.12);
+        }
+        .toolbar .separator {
+            width: 1px;
+            background: rgba(0, 0, 0, 0.1);
+            margin: 0 0.2rem;
+        }
+        .toolbar .zoom-label {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #666;
+            padding: 0 0.2rem;
+            min-width: 2.8rem;
+            text-align: center;
+        }
+        #app.theme-monochrome .toolbar {
+            background: rgba(40, 40, 60, 0.85);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+        #app.theme-monochrome .toolbar button {
+            color: #e0e0e0;
+        }
+        #app.theme-monochrome .toolbar button:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        #app.theme-monochrome .toolbar .zoom-label {
+            color: #aaa;
+        }
+        #app.theme-monochrome .toolbar .separator {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* 内容滚动容器 */
+        .content-scroll {
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            padding: 2rem 2.5rem 2.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform-origin: top center;
+            transition: transform 0.3s ease;
+        }
+        .content-scroll .inner-content {
+            width: 100%;
+            max-width: 1600px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* ===== 视图布局 ===== */
+        .view-single .page-item {
+            width: 100%;
+            margin-bottom: 1.5rem;
+        }
+        .view-dual .inner-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            align-items: start;
+        }
+        .view-dual .page-item {
+            width: 100%;
+            margin-bottom: 0;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            padding: 0.2rem;
+            border: 1px solid #e8e4e0;
+        }
+        .view-dual .page-item:only-child {
+            grid-column: span 2;
+            max-width: 70%;
+            margin: 0 auto;
+        }
+        .view-continuous .page-item {
+            width: 100%;
+            margin-bottom: 1.5rem;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            padding: 0.2rem;
+            border: 1px solid #e8e4e0;
+        }
+        .page-item img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            display: block;
+        }
+        .page-item .page-label {
+            font-size: 0.8rem;
+            color: #888;
+            text-align: center;
+            margin-top: 0.3rem;
+            padding-bottom: 0.3rem;
+        }
+        .page-item .page-content {
+            padding: 1.2rem 1.5rem;
+            width: 100%;
+        }
+        .page-item .page-content .address-block {
+            width: 100%;
+            text-align: center;
+            padding: 0.3rem 0 0.6rem 0;
+            margin-bottom: 0.6rem;
+            border-bottom: 2px dashed #ddd0c4;
+            font-size: clamp(1rem, 2vw, 1.3rem);
+            font-weight: 400;
+            color: #555;
+            letter-spacing: 1px;
+        }
+        .page-item .page-content .address-block .sender {
+            color: #1e1e2a;
+            font-weight: 500;
+        }
+        .page-item .page-content .address-block .arrow {
+            margin: 0 0.8rem;
+            color: #aaa;
+        }
+        .page-item .page-content .address-block .receiver {
+            color: #1e1e2a;
+            font-weight: 500;
+        }
+        .page-item .page-content .letter-meta {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.3rem;
+            padding-bottom: 0.6rem;
+            border-bottom: 2px dashed #ddd0c4;
+            margin-bottom: 0.8rem;
+            width: 100%;
+        }
+        .page-item .page-content .letter-title {
+            font-size: clamp(1rem, 2vw, 1.4rem);
+            font-weight: 600;
+            text-align: center;
+        }
+        .page-item .page-content .letter-time {
+            font-size: clamp(0.7rem, 1.5vw, 0.9rem);
+            color: #888;
+            text-align: center;
+        }
+        .page-item .page-content .letter-body {
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-break: break-word;
+            width: 100%;
+            text-align: center;
+        }
+        .page-item .page-content .letter-body.html-content {
+            white-space: normal;
+        }
+        .page-item .page-content .letter-body.html-content p {
+            margin-bottom: 0.6em;
+            text-align: center;
+        }
+        .page-item .page-content .letter-body.html-content blockquote {
+            border-left: 3px solid #7a8a9a;
+            padding-left: 1rem;
+            margin: 0.5rem 0;
+            color: #555;
+            text-align: left;
+        }
+        .page-item .page-content .letter-body.html-content ul,
+        .page-item .page-content .letter-body.html-content ol {
+            text-align: left;
+            padding-left: 1.5rem;
+            margin: 0.5rem 0;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: #888;
+        }
+        .empty-state p {
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 5vh;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e1e2a;
+            color: #f0f0f0;
+            padding: 0.8rem 2rem;
+            border-radius: 40px;
+            font-size: clamp(0.8rem, 1.8vw, 1rem);
+            font-weight: 500;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 999;
+            white-space: nowrap;
+        }
+        .toast.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* 响应式 */
+        @media (max-width: 600px) {
+            #uploadPage {
+                padding: 3vh 4vw;
+            }
+            .content-scroll {
+                padding: 1.2rem 1rem 1.2rem;
+            }
+            .view-logo {
+                top: 0.8rem;
+                left: 0.8rem;
+                font-size: clamp(0.8rem, 2vw, 1rem);
+            }
+            .password-entry {
+                width: 95%;
+            }
+            .toolbar {
+                bottom: 0.8rem;
+                right: 0.8rem;
+                padding: 0.2rem 0.4rem;
+                gap: 0.2rem;
+            }
+            .toolbar button {
+                min-width: 1.8rem;
+                height: 1.8rem;
+                font-size: 0.8rem;
+                padding: 0 0.4rem;
+            }
+            .toolbar .zoom-label {
+                min-width: 2rem;
+                font-size: 0.7rem;
+            }
+            .sender-receiver {
+                flex-direction: column;
+                gap: 0.8rem;
+            }
+            .sender-receiver .field-group {
+                min-width: 100%;
+            }
+            .view-dual .inner-content {
+                grid-template-columns: 1fr 1fr;
+                gap: 1rem;
+            }
+            .view-dual .page-item:only-child {
+                max-width: 90%;
+            }
+            .page-item .page-content {
+                padding: 0.8rem 1rem;
+            }
+        }
+
+        @media (max-height: 500px) and (orientation: landscape) {
+            .view-logo {
+                top: 0.5rem;
+                left: 0.8rem;
+                font-size: clamp(0.7rem, 1.5vw, 1rem);
+            }
+            .content-scroll {
+                padding: 0.8rem 1rem 0.8rem;
+            }
+            .password-entry .input-group {
+                flex-direction: row;
+            }
+            .toolbar {
+                bottom: 0.5rem;
+                right: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- ===== 上传页面 ===== -->
+        <div id="uploadPage" class="page active">
+            <header class="app-header">
+                <div class="app-title">来信 <span>·</span> 信件</div>
+                <div class="app-sub">上传 · 主题 · 分享</div>
+            </header>
+
+            <div class="upload-zone" id="dropZone">
+                <div class="main-text">拖拽文件至此，或点击选择</div>
+                <div class="sub-text">支持 TXT, PDF, Word (doc/docx) · 数据存储在坚果云</div>
+                <div class="formats">
+                    <span>.txt</span><span>.pdf</span><span>.doc</span><span>.docx</span>
+                </div>
+                <input type="file" id="fileInput" accept=".txt,.pdf,.doc,.docx" />
+            </div>
+
+            <div class="file-info" id="fileInfo">
+                <div class="f-detail">
+                    <div class="f-name" id="fileName">未命名</div>
+                    <div class="f-size" id="fileSize">0 KB</div>
+                </div>
+                <button class="f-remove" id="fileRemove">✕</button>
+            </div>
+
+            <div class="sender-receiver">
+                <div class="field-group">
+                    <label for="senderInput">寄信人</label>
+                    <input type="text" id="senderInput" placeholder="输入寄信人姓名" />
+                </div>
+                <div class="field-group">
+                    <label for="receiverInput">收信人</label>
+                    <input type="text" id="receiverInput" placeholder="输入收信人姓名" />
+                </div>
+            </div>
+
+            <div class="password-section">
+                <label>访问密码</label>
+                <div class="pwd-wrapper">
+                    <input type="text" id="pwdInput" placeholder="自动生成" maxlength="20" spellcheck="false" />
+                    <button class="refresh-btn" id="refreshPwd">⟳</button>
+                </div>
+                <div class="pwd-hint">至少4个字符，留空自动生成6位</div>
+            </div>
+
+            <div class="options-row">
+                <div class="option-group">
+                    <label for="themeSelect">主题</label>
+                    <select id="themeSelect">
+                        <option value="default">默认</option>
+                        <option value="monochrome">黑白</option>
+                        <option value="colorful">彩色</option>
+                        <option value="love">表白</option>
+                    </select>
+                </div>
+                <div class="option-group">
+                    <label for="qualitySelect">画质</label>
+                    <select id="qualitySelect">
+                        <option value="standard">标准</option>
+                        <option value="high" selected>高清</option>
+                        <option value="original">原画</option>
+                    </select>
+                    <span style="font-size:clamp(0.6rem,1.2vw,0.8rem);color:#888;">（原画超清，但页数多时可能较慢）</span>
+                </div>
+            </div>
+
+            <button class="upload-btn" id="uploadBtn">
+                <span>上传分享</span>
+            </button>
+
+            <div class="success-box" id="successBox">
+                <div class="s-title">上传成功</div>
+                <div class="pwd-row">
+                    <span>密码：</span>
+                    <span class="pwd-code" id="resultPwd">——</span>
+                    <button class="copy-btn" id="copyPwdBtn">复制</button>
+                </div>
+                <div class="link-row">
+                    <span>链接：</span>
+                    <span class="link-input" id="resultLink">——</span>
+                    <button class="copy-link-btn" id="copyLinkBtn">复制</button>
+                </div>
+                <div class="address-info" id="resultAddress"></div>
+                <div style="margin-top:0.6rem;font-size:clamp(0.7rem,1.5vw,0.9rem);color:#555;">分享密码，对方即可开启信件</div>
+            </div>
+
+            <div class="error-msg" id="uploadError"></div>
+        </div>
+
+        <!-- ===== 查看页面 ===== -->
+        <div id="viewPage" class="page">
+            <div class="view-logo">来信</div>
+            <div class="letter-view" id="letterView">
+                <div class="password-entry" id="passwordEntry">
+                    <label>请输入密码</label>
+                    <div class="input-group">
+                        <input type="text" id="viewPwdInput" placeholder="访问密码" spellcheck="false" />
+                        <button class="unfold-btn" id="unfoldBtn">拆信</button>
+                    </div>
+                    <div style="font-size:clamp(0.7rem,1.5vw,0.9rem);color:#888;margin-top:0.2rem;">输入密码后点击拆信，信件将缓缓显现</div>
+                </div>
+                <!-- 信纸 -->
+                <div class="letter-paper" id="letterPaper">
+                    <!-- 工具栏（右下） -->
+                    <div class="toolbar" id="toolbar">
+                        <button id="zoomOut" title="缩小">−</button>
+                        <span class="zoom-label" id="zoomLabel">100%</span>
+                        <button id="zoomIn" title="放大">+</button>
+                        <button id="zoomFit" title="适应屏幕">⊡</button>
+                        <button id="zoomReset" title="实际大小">1:1</button>
+                        <span class="separator"></span>
+                        <button id="viewSingle" class="view-btn" data-view="single">单页</button>
+                        <button id="viewDual" class="view-btn" data-view="dual">双页</button>
+                        <button id="viewContinuous" class="view-btn" data-view="continuous">连续</button>
+                    </div>
+                    <!-- 可滚动缩放内容 -->
+                    <div class="content-scroll" id="contentScroll">
+                        <div class="inner-content" id="innerContent">
+                            <!-- 动态内容由 JS 生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="error-msg" id="viewError" style="position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);width:90%;max-width:400px;z-index:5;"></div>
+            <div class="empty-state" id="viewEmpty" style="display:none;"></div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // =====================================================
+            //  🔐 配置（使用 Vercel 代理解决跨域）
+            // =====================================================
+            const PROXY_URL = 'https://laixin.vercel.app/api/proxy';
+            const WEBDAV_URL = 'https://dav.jianguoyun.com/dav/';
+            const WEBDAV_USER = '1219155416@qq.com';
+            const WEBDAV_PASS = 'azx9z2xqxqfq22idh';
+            const auth = btoa(WEBDAV_USER + ':' + WEBDAV_PASS);
+
+            // =====================================================
+            //  代理请求函数
+            // =====================================================
+            async function proxyFetch(url, options = {}) {
+                const response = await fetch(PROXY_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        url: url,
+                        method: options.method || 'GET',
+                        headers: options.headers || {},
+                        body: options.body || null,
+                    }),
+                });
+                const result = await response.json();
+                if (result.status >= 400) {
+                    throw new Error(result.data || '请求失败');
+                }
+                return result.data;
+            }
+
+            // =====================================================
+            //  存储操作（通过代理）
+            // =====================================================
+            async function fileExists(filename) {
+                try {
+                    await proxyFetch(WEBDAV_URL + filename, {
+                        method: 'HEAD',
+                        headers: { 'Authorization': 'Basic ' + auth }
+                    });
+                    return true;
+                } catch (e) {
+                    if (e.message.includes('404')) return false;
+                    throw e;
+                }
+            }
+
+            async function saveArticle(id, data) {
+                await proxyFetch(WEBDAV_URL + id + '.json', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Basic ' + auth,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+            }
+
+            async function getArticle(id) {
+                const data = await proxyFetch(WEBDAV_URL + id + '.json', {
+                    headers: { 'Authorization': 'Basic ' + auth }
+                });
+                return JSON.parse(data);
+            }
+
+            // =====================================================
+            //  工具函数
+            // =====================================================
+            function formatSize(bytes) {
+                if (bytes < 1024) return bytes + ' B';
+                if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+                return (bytes / 1048576).toFixed(1) + ' MB';
+            }
+
+            function generatePassword(length = 6) {
+                const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                let pwd = '';
+                for (let i = 0; i < length; i++) {
+                    pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                return pwd;
+            }
+
+            function getFileExtension(filename) {
+                const i = filename.lastIndexOf('.');
+                return i > 0 ? filename.slice(i).toLowerCase() : '';
+            }
+
+            function getFileType(ext) {
+                const map = { '.txt': 'txt', '.pdf': 'pdf', '.doc': 'doc', '.docx': 'docx' };
+                return map[ext] || 'unknown';
+            }
+
+            function showToast(msg, duration = 2200) {
+                const toast = document.getElementById('toast');
+                toast.textContent = msg;
+                toast.classList.add('show');
+                clearTimeout(toast._timer);
+                toast._timer = setTimeout(() => toast.classList.remove('show'), duration);
+            }
+
+            // =====================================================
+            //  DOM 引用
+            // =====================================================
+            const $ = (s) => document.querySelector(s);
+            const $$ = (s) => document.querySelectorAll(s);
+
+            const app = $('#app');
+            const uploadPage = $('#uploadPage');
+            const viewPage = $('#viewPage');
+
+            const dropZone = $('#dropZone');
+            const fileInput = $('#fileInput');
+            const fileInfo = $('#fileInfo');
+            const fileName = $('#fileName');
+            const fileSize = $('#fileSize');
+            const fileRemove = $('#fileRemove');
+            const pwdInput = $('#pwdInput');
+            const refreshPwd = $('#refreshPwd');
+            const themeSelect = $('#themeSelect');
+            const qualitySelect = $('#qualitySelect');
+            const uploadBtn = $('#uploadBtn');
+            const successBox = $('#successBox');
+            const resultPwd = $('#resultPwd');
+            const resultLink = $('#resultLink');
+            const resultAddress = $('#resultAddress');
+            const copyPwdBtn = $('#copyPwdBtn');
+            const copyLinkBtn = $('#copyLinkBtn');
+            const uploadError = $('#uploadError');
+
+            const senderInput = $('#senderInput');
+            const receiverInput = $('#receiverInput');
+
+            const passwordEntry = $('#passwordEntry');
+            const viewPwdInput = $('#viewPwdInput');
+            const unfoldBtn = $('#unfoldBtn');
+            const letterPaper = $('#letterPaper');
+            const viewError = $('#viewError');
+            const viewEmpty = $('#viewEmpty');
+            const contentScroll = $('#contentScroll');
+            const zoomLabel = $('#zoomLabel');
+            const innerContent = $('#innerContent');
+
+            let selectedFile = null;
+            let isUploading = false;
+            let isUnfolded = false;
+
+            // =====================================================
+            //  缩放控制
+            // =====================================================
+            let currentScale = 1;
+            const MIN_SCALE = 0.2;
+            const MAX_SCALE = 5;
+
+            function updateZoom(scale) {
+                currentScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale));
+                contentScroll.style.transform = `scale(${currentScale})`;
+                zoomLabel.textContent = Math.round(currentScale * 100) + '%';
+            }
+
+            function zoomIn() { updateZoom(currentScale * 1.2); }
+            function zoomOut() { updateZoom(currentScale / 1.2); }
+            function zoomReset() { updateZoom(1); }
+
+            function zoomFit() {
+                const container = contentScroll;
+                const inner = container.querySelector('.inner-content');
+                const contentWidth = inner.scrollWidth;
+                const containerWidth = container.clientWidth - 20;
+                if (contentWidth > 0) {
+                    const fitScale = containerWidth / contentWidth;
+                    updateZoom(fitScale);
+                } else {
+                    updateZoom(1);
+                }
+            }
+
+            function toggleFit() {
+                if (Math.abs(currentScale - 1) < 0.05) {
+                    zoomFit();
+                } else {
+                    zoomReset();
+                }
+            }
+
+            // =====================================================
+            //  视图切换
+            // =====================================================
+            let currentView = 'single';
+
+            function applyView(view) {
+                currentView = view;
+                contentScroll.classList.remove('view-single', 'view-dual', 'view-continuous');
+                contentScroll.classList.add('view-' + view);
+                setTimeout(() => zoomFit(), 100);
+                document.querySelectorAll('.view-btn').forEach(btn => {
+                    btn.style.background = btn.dataset.view === view ? 'rgba(0,0,0,0.1)' : 'transparent';
+                });
+            }
+
+            document.getElementById('viewSingle').addEventListener('click', () => applyView('single'));
+            document.getElementById('viewDual').addEventListener('click', () => applyView('dual'));
+            document.getElementById('viewContinuous').addEventListener('click', () => applyView('continuous'));
+
+            document.getElementById('zoomIn').addEventListener('click', zoomIn);
+            document.getElementById('zoomOut').addEventListener('click', zoomOut);
+            document.getElementById('zoomReset').addEventListener('click', zoomReset);
+            document.getElementById('zoomFit').addEventListener('click', zoomFit);
+            contentScroll.addEventListener('dblclick', toggleFit);
+
+            // =====================================================
+            //  主题
+            // =====================================================
+            function applyTheme(theme) {
+                app.className = 'app';
+                if (theme && theme !== 'default') {
+                    app.classList.add('theme-' + theme);
+                }
+                if (themeSelect.value !== theme) {
+                    themeSelect.value = theme || 'default';
+                }
+            }
+            themeSelect.addEventListener('change', function() {
+                applyTheme(this.value);
+            });
+
+            // =====================================================
+            //  页面切换
+            // =====================================================
+            function showUploadPage() {
+                uploadPage.classList.add('active');
+                viewPage.classList.remove('active');
+                resetView();
+            }
+
+            function showViewPage() {
+                viewPage.classList.add('active');
+                uploadPage.classList.remove('active');
+                viewPwdInput.focus();
+                resetView();
+            }
+
+            function resetView() {
+                isUnfolded = false;
+                passwordEntry.classList.remove('hidden');
+                letterPaper.classList.remove('open');
+                viewError.classList.remove('show');
+                viewEmpty.style.display = 'none';
+                innerContent.innerHTML = '';
+                passwordEntry.style.display = 'flex';
+                updateZoom(1);
+                applyView('single');
+            }
+
+            // =====================================================
+            //  拆信
+            // =====================================================
+            async function unfoldLetter() {
+                if (isUnfolded) return;
+                const pwd = viewPwdInput.value.trim();
+                if (!pwd) {
+                    showError(viewError, '请输入密码');
+                    return;
+                }
+
+                try {
+                    const record = await getArticle(pwd);
+                    if (!record) {
+                        showError(viewError, '密码错误或信件不存在');
+                        return;
+                    }
+                    viewError.classList.remove('show');
+
+                    const articleTheme = record.theme || 'default';
+                    applyTheme(articleTheme);
+
+                    let pagesHtml = '';
+                    const sender = record.sender || '匿名';
+                    const receiver = record.receiver || '匿名';
+                    const addressHtml = `
+                        <div class="address-block">
+                            <span class="sender">${sender}</span>
+                            <span class="arrow">→</span>
+                            <span class="receiver">${receiver}</span>
+                        </div>
+                    `;
+                    const title = record.fileName || '未命名信件';
+                    const time = record.uploadTime ? new Date(record.uploadTime).toLocaleString('zh-CN') : '未知时间';
+                    const metaHtml = `
+                        <div class="letter-meta">
+                            <span class="letter-title">${title}</span>
+                            <span class="letter-time">${time}</span>
+                        </div>
+                    `;
+                    let bodyContent = record.content || '（信件为空）';
+                    let bodyHtml = '';
+                    if (record.contentFormat === 'html') {
+                        if (bodyContent.includes('<img')) {
+                            const temp = document.createElement('div');
+                            temp.innerHTML = bodyContent;
+                            const imgs = temp.querySelectorAll('img');
+                            if (imgs.length > 0) {
+                                imgs.forEach((img, idx) => {
+                                    const src = img.getAttribute('src');
+                                    const alt = img.getAttribute('alt') || `第${idx+1}页`;
+                                    pagesHtml += `
+                                        <div class="page-item">
+                                            <img src="${src}" alt="${alt}" />
+                                            <div class="page-label">${alt}</div>
+                                        </div>
+                                    `;
+                                });
+                            } else {
+                                bodyHtml = bodyContent;
+                            }
+                        } else {
+                            bodyHtml = bodyContent;
+                        }
+                    } else {
+                        bodyHtml = bodyContent;
+                    }
+
+                    if (pagesHtml === '') {
+                        const pageContentHtml = `
+                            <div class="page-content">
+                                ${addressHtml}
+                                ${metaHtml}
+                                <div class="letter-body ${record.contentFormat === 'html' ? 'html-content' : ''}">${bodyHtml}</div>
+                            </div>
+                        `;
+                        pagesHtml = `
+                            <div class="page-item">
+                                ${pageContentHtml}
+                            </div>
+                        `;
+                    }
+
+                    innerContent.innerHTML = pagesHtml;
+
+                    passwordEntry.classList.add('hidden');
+                    setTimeout(() => {
+                        letterPaper.classList.add('open');
+                        setTimeout(() => {
+                            zoomFit();
+                            applyView('single');
+                        }, 500);
+                    }, 300);
+
+                    isUnfolded = true;
+                    showToast('信件已显现');
+                } catch (err) {
+                    console.error(err);
+                    showError(viewError, '读取信件失败：' + err.message);
+                }
+            }
+
+            // =====================================================
+            //  文件读取
+            // =====================================================
+            function readTextFile(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve({ content: reader.result, format: 'plain' });
+                    reader.onerror = () => reject(new Error('读取文本失败'));
+                    reader.readAsText(file, 'UTF-8');
+                });
+            }
+
+            async function readPdfFile(file, qualityLevel) {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+                let fullText = '';
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(item => item.str).join(' ');
+                    fullText += pageText + '\n\n';
+                }
+                fullText = fullText.trim();
+
+                if (fullText.length >= 20) {
+                    return { content: fullText, format: 'plain' };
+                }
+
+                const configs = {
+                    standard: { scale: 1.5, maxWidth: 3000, quality: 0.85 },
+                    high: { scale: 2.0, maxWidth: 4000, quality: 0.95 },
+                    original: { scale: 2.5, maxWidth: 5000, quality: 0.99 }
+                };
+                const cfg = configs[qualityLevel] || configs.high;
+
+                const pageImages = [];
+                const pageCount = pdf.numPages;
+                let useCfg = cfg;
+                if (pageCount > 10 && qualityLevel === 'original') {
+                    showToast('页数较多，自动切换为高清模式', 3000);
+                    useCfg = configs.high;
+                }
+                for (let i = 1; i <= pageCount; i++) {
+                    const page = await pdf.getPage(i);
+                    const viewport = page.getViewport({ scale: 1 });
+                    let width = viewport.width;
+                    const targetScale = useCfg.scale;
+                    const finalScale = (width * targetScale > useCfg.maxWidth) ? useCfg.maxWidth / width : targetScale;
+                    const scaledViewport = page.getViewport({ scale: finalScale });
+                    const canvas = document.createElement('canvas');
+                    canvas.width = scaledViewport.width;
+                    canvas.height = scaledViewport.height;
+                    const context = canvas.getContext('2d');
+                    await page.render({ canvasContext: context, viewport: scaledViewport }).promise;
+                    pageImages.push(canvas.toDataURL('image/jpeg', useCfg.quality));
+                }
+
+                let htmlContent = pageImages.map((url, idx) =>
+                    `<div class="page-item"><img src="${url}" alt="第${idx+1}页" /><div class="page-label">第${idx+1}页</div></div>`
+                ).join('');
+                return { content: htmlContent, format: 'html' };
+            }
+
+            async function readWordFile(file) {
+                const arrayBuffer = await file.arrayBuffer();
+                const result = await mammoth.convertToHtml({ arrayBuffer });
+                return { content: result.value, format: 'html' };
+            }
+
+            async function extractTextFromFile(file) {
+                const ext = getFileExtension(file.name);
+                const type = getFileType(ext);
+                const quality = qualitySelect.value;
+                if (type === 'txt') return await readTextFile(file);
+                else if (type === 'pdf') return await readPdfFile(file, quality);
+                else if (type === 'doc' || type === 'docx') return await readWordFile(file);
+                else throw new Error('不支持的文件格式');
+            }
+
+            // =====================================================
+            //  上传
+            // =====================================================
+            async function handleUpload() {
+                if (isUploading) return;
+                if (!selectedFile) {
+                    showError(uploadError, '请选择一篇文章');
+                    return;
+                }
+
+                let pwd = pwdInput.value.trim();
+                if (!pwd) {
+                    pwd = generatePassword(6);
+                    pwdInput.value = pwd;
+                }
+                if (pwd.length < 4) {
+                    showError(uploadError, '密码至少4个字符');
+                    return;
+                }
+
+                try {
+                    if (await fileExists(pwd + '.json')) {
+                        showError(uploadError, '密码已被使用，请换一个');
+                        return;
+                    }
+                } catch (err) {
+                    showError(uploadError, '检查密码失败：' + err.message);
+                    return;
+                }
+
+                const theme = themeSelect.value || 'default';
+                const sender = senderInput.value.trim() || '匿名';
+                const receiver = receiverInput.value.trim() || '匿名';
+
+                isUploading = true;
+                uploadBtn.disabled = true;
+                uploadBtn.innerHTML = '<span class="spinner"></span> 处理中…';
+                hideError(uploadError);
+                successBox.classList.remove('show');
+
+                try {
+                    const { content, format } = await extractTextFromFile(selectedFile);
+                    const data = {
+                        fileName: selectedFile.name,
+                        fileType: getFileType(getFileExtension(selectedFile.name)),
+                        content: content,
+                        contentFormat: format,
+                        uploadTime: new Date().toISOString(),
+                        theme: theme,
+                        sender: sender,
+                        receiver: receiver,
+                    };
+
+                    await saveArticle(pwd, data);
+
+                    resultPwd.textContent = pwd;
+                    const linkUrl = window.location.origin + window.location.pathname + '?view=' + encodeURIComponent(pwd);
+                    resultLink.textContent = linkUrl;
+                    resultAddress.textContent = `寄信人：${sender}  →  收信人：${receiver}`;
+                    successBox.classList.add('show');
+                    showToast('上传成功，信件已封装');
+                } catch (err) {
+                    console.error(err);
+                    showError(uploadError, '上传失败：' + err.message);
+                } finally {
+                    isUploading = false;
+                    uploadBtn.disabled = false;
+                    uploadBtn.innerHTML = '<span>上传分享</span>';
+                }
+            }
+
+            // =====================================================
+            //  辅助函数
+            // =====================================================
+            function showError(el, msg) {
+                el.textContent = msg;
+                el.classList.add('show');
+            }
+
+            function hideError(el) {
+                el.classList.remove('show');
+            }
+
+            function resetUploadUI() {
+                selectedFile = null;
+                fileInfo.classList.remove('show');
+                successBox.classList.remove('show');
+                hideError(uploadError);
+                pwdInput.value = generatePassword(6);
+            }
+
+            function displayFileInfo(file) {
+                fileName.textContent = file.name;
+                fileSize.textContent = formatSize(file.size);
+                fileInfo.classList.add('show');
+            }
+
+            function processFile(file) {
+                const ext = getFileExtension(file.name);
+                if (!['.txt', '.pdf', '.doc', '.docx'].includes(ext)) {
+                    showToast('仅支持 TXT, PDF, Word 格式');
+                    return;
+                }
+                selectedFile = file;
+                displayFileInfo(file);
+                hideError(uploadError);
+                successBox.classList.remove('show');
+                if (!pwdInput.value || pwdInput.value.length < 4) {
+                    pwdInput.value = generatePassword(6);
+                }
+                showToast('已选择：' + file.name + ' (' + formatSize(file.size) + ')');
+            }
+
+            // =====================================================
+            //  URL参数处理
+            // =====================================================
+            function checkUrlParam() {
+                const params = new URLSearchParams(window.location.search);
+                const viewPwd = params.get('view');
+                if (viewPwd) {
+                    viewPwdInput.value = viewPwd;
+                    showViewPage();
+                    const newUrl = window.location.pathname + window.location.search.replace(/[&?]view=[^&]*/, '');
+                    if (newUrl !== window.location.pathname) {
+                        window.history.replaceState({}, '', newUrl);
+                    }
+                } else {
+                    showUploadPage();
+                }
+            }
+
+            // =====================================================
+            //  事件绑定
+            // =====================================================
+            dropZone.addEventListener('click', () => fileInput.click());
+            dropZone.addEventListener('dragover', (e) => { e.preventDefault();
+                dropZone.classList.add('dragover'); });
+            dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                if (e.dataTransfer.files.length > 0) processFile(e.dataTransfer.files[0]);
+            });
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files.length > 0) processFile(fileInput.files[0]);
+                fileInput.value = '';
+            });
+
+            fileRemove.addEventListener('click', resetUploadUI);
+
+            refreshPwd.addEventListener('click', async () => {
+                let newPwd = generatePassword(6);
+                let tries = 0;
+                while (tries < 20) {
+                    try {
+                        if (!(await fileExists(newPwd + '.json'))) break;
+                    } catch (e) { break; }
+                    newPwd = generatePassword(6);
+                    tries++;
+                }
+                pwdInput.value = newPwd;
+                showToast('新密码已生成');
+            });
+
+            uploadBtn.addEventListener('click', handleUpload);
+            pwdInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') uploadBtn.click(); });
+
+            unfoldBtn.addEventListener('click', unfoldLetter);
+            viewPwdInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') unfoldLetter(); });
+
+            copyPwdBtn.addEventListener('click', () => {
+                const pwd = resultPwd.textContent;
+                if (pwd && pwd !== '——') {
+                    navigator.clipboard.writeText(pwd).then(() => showToast('密码已复制'))
+                        .catch(() => {
+                            const ta = document.createElement('textarea');
+                            ta.value = pwd;
+                            document.body.appendChild(ta);
+                            ta.select();
+                            document.execCommand('copy');
+                            ta.remove();
+                            showToast('密码已复制');
+                        });
+                }
+            });
+
+            copyLinkBtn.addEventListener('click', () => {
+                const link = resultLink.textContent;
+                if (link && link !== '——') {
+                    navigator.clipboard.writeText(link).then(() => showToast('链接已复制'))
+                        .catch(() => {
+                            const ta = document.createElement('textarea');
+                            ta.value = link;
+                            document.body.appendChild(ta);
+                            ta.select();
+                            document.execCommand('copy');
+                            ta.remove();
+                            showToast('链接已复制');
+                        });
+                }
+            });
+
+            // =====================================================
+            //  初始化
+            // =====================================================
+            async function init() {
+                pwdInput.value = generatePassword(6);
+                applyTheme('default');
+                checkUrlParam();
+                if (!window.location.search.includes('view=')) {
+                    showUploadPage();
+                }
+                letterPaper.classList.remove('open');
+                viewEmpty.style.display = 'block';
+                updateZoom(1);
+                applyView('single');
+                console.log('来信 · Vercel 代理版已启动');
+            }
+
+            init();
+        })();
+    </script>
+</body>
+</html>
