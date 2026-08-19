@@ -4,19 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>来信</title>
-    <!-- PDF.js & mammoth.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js">
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js">
     </script>
     <style>
-        /* ===== 完整样式（与之前的来信1.html完全一致） ===== */
+        /* ===== 完整样式（与之前完全一致） ===== */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
         html,
         body {
             width: 100%;
@@ -26,11 +24,9 @@
             transition: background 0.4s;
             overflow: hidden;
         }
-
         title {
             display: none;
         }
-
         #app {
             width: 100%;
             height: 100vh;
@@ -46,8 +42,7 @@
             position: relative;
             overflow: hidden;
         }
-
-        /* ===== 主题变体 ===== */
+        /* 主题变体 */
         #app.theme-monochrome {
             background: #1e1e2a;
             color: #e0e0e0;
@@ -118,8 +113,6 @@
             background: #fff5f7;
             color: #4a1a2a;
         }
-
-        /* ===== 页面容器 ===== */
         .page {
             display: none;
             width: 100%;
@@ -142,8 +135,6 @@
                 transform: scale(1);
             }
         }
-
-        /* ===== 上传页 ===== */
         #uploadPage {
             padding: 5vh 5vw;
             overflow-y: auto;
@@ -170,7 +161,6 @@
             font-size: clamp(0.9rem, 2vw, 1.1rem);
             color: #888;
         }
-
         .upload-zone {
             border: 2px dashed #ccc;
             border-radius: 1.5rem;
@@ -217,7 +207,6 @@
         .upload-zone input[type="file"] {
             display: none;
         }
-
         .file-info {
             display: none;
             align-items: center;
@@ -262,7 +251,6 @@
             background: #f0e0e0;
             color: #b33;
         }
-
         .sender-receiver {
             margin-top: 1.5rem;
             display: flex;
@@ -296,7 +284,6 @@
             border-color: #7a8a9a;
             box-shadow: 0 0 0 3px rgba(100, 120, 140, 0.15);
         }
-
         .password-section {
             margin-top: 1.5rem;
             display: flex;
@@ -357,7 +344,6 @@
             width: 100%;
             margin-top: 0.2rem;
         }
-
         .options-row {
             margin-top: 1rem;
             display: flex;
@@ -391,7 +377,6 @@
             border-color: #7a8a9a;
             box-shadow: 0 0 0 3px rgba(100, 120, 140, 0.15);
         }
-
         .upload-btn {
             width: 100%;
             margin-top: 1.5rem;
@@ -435,7 +420,6 @@
                 transform: rotate(360deg);
             }
         }
-
         .success-box {
             display: none;
             margin-top: 1.5rem;
@@ -521,7 +505,6 @@
             border-top: 1px dashed #aac;
             padding-top: 0.6rem;
         }
-
         .error-msg {
             color: #b33;
             font-size: clamp(0.8rem, 1.8vw, 1rem);
@@ -536,8 +519,6 @@
         .error-msg.show {
             display: block;
         }
-
-        /* ===== 查看页 ===== */
         #viewPage {
             padding: 0;
             justify-content: flex-start;
@@ -564,7 +545,6 @@
         #app.theme-love .view-logo {
             color: rgba(120, 40, 60, 0.15);
         }
-
         .letter-view {
             width: 100%;
             height: 100%;
@@ -577,7 +557,6 @@
             overflow: hidden;
             transition: background 0.4s;
         }
-
         .password-entry {
             display: flex;
             flex-direction: column;
@@ -639,8 +618,6 @@
             transform: scale(1.03);
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
         }
-
-        /* ===== 信纸 ===== */
         .letter-paper {
             position: absolute;
             left: 0;
@@ -665,8 +642,6 @@
             opacity: 1;
             pointer-events: auto;
         }
-
-        /* 工具栏（右下角） */
         .toolbar {
             position: fixed;
             bottom: 1.5rem;
@@ -740,8 +715,6 @@
         #app.theme-monochrome .toolbar .separator {
             background: rgba(255, 255, 255, 0.1);
         }
-
-        /* 内容滚动容器 */
         .content-scroll {
             width: 100%;
             height: 100%;
@@ -760,8 +733,6 @@
             flex-direction: column;
             align-items: center;
         }
-
-        /* ===== 视图布局 ===== */
         .view-single .page-item {
             width: 100%;
             margin-bottom: 1.5rem;
@@ -883,7 +854,6 @@
             padding-left: 1.5rem;
             margin: 0.5rem 0;
         }
-
         .empty-state {
             text-align: center;
             padding: 2rem;
@@ -892,7 +862,6 @@
         .empty-state p {
             font-size: clamp(0.9rem, 2vw, 1.1rem);
         }
-
         .toast {
             position: fixed;
             bottom: 5vh;
@@ -915,8 +884,6 @@
             opacity: 1;
             pointer-events: auto;
         }
-
-        /* 响应式 */
         @media (max-width: 600px) {
             #uploadPage {
                 padding: 3vh 4vw;
@@ -966,7 +933,6 @@
                 padding: 0.8rem 1rem;
             }
         }
-
         @media (max-height: 500px) and (orientation: landscape) {
             .view-logo {
                 top: 0.5rem;
@@ -988,13 +954,12 @@
 </head>
 <body>
     <div id="app">
-        <!-- ===== 上传页面 ===== -->
+        <!-- 上传页面 -->
         <div id="uploadPage" class="page active">
             <header class="app-header">
                 <div class="app-title">来信 <span>·</span> 信件</div>
                 <div class="app-sub">上传 · 主题 · 分享</div>
             </header>
-
             <div class="upload-zone" id="dropZone">
                 <div class="main-text">拖拽文件至此，或点击选择</div>
                 <div class="sub-text">支持 TXT, PDF, Word (doc/docx) · 数据存储在坚果云</div>
@@ -1003,7 +968,6 @@
                 </div>
                 <input type="file" id="fileInput" accept=".txt,.pdf,.doc,.docx" />
             </div>
-
             <div class="file-info" id="fileInfo">
                 <div class="f-detail">
                     <div class="f-name" id="fileName">未命名</div>
@@ -1011,7 +975,6 @@
                 </div>
                 <button class="f-remove" id="fileRemove">✕</button>
             </div>
-
             <div class="sender-receiver">
                 <div class="field-group">
                     <label for="senderInput">寄信人</label>
@@ -1022,7 +985,6 @@
                     <input type="text" id="receiverInput" placeholder="输入收信人姓名" />
                 </div>
             </div>
-
             <div class="password-section">
                 <label>访问密码</label>
                 <div class="pwd-wrapper">
@@ -1031,7 +993,6 @@
                 </div>
                 <div class="pwd-hint">至少4个字符，留空自动生成6位</div>
             </div>
-
             <div class="options-row">
                 <div class="option-group">
                     <label for="themeSelect">主题</label>
@@ -1052,11 +1013,7 @@
                     <span style="font-size:clamp(0.6rem,1.2vw,0.8rem);color:#888;">（原画超清，但页数多时可能较慢）</span>
                 </div>
             </div>
-
-            <button class="upload-btn" id="uploadBtn">
-                <span>上传分享</span>
-            </button>
-
+            <button class="upload-btn" id="uploadBtn"><span>上传分享</span></button>
             <div class="success-box" id="successBox">
                 <div class="s-title">上传成功</div>
                 <div class="pwd-row">
@@ -1072,11 +1029,10 @@
                 <div class="address-info" id="resultAddress"></div>
                 <div style="margin-top:0.6rem;font-size:clamp(0.7rem,1.5vw,0.9rem);color:#555;">分享密码，对方即可开启信件</div>
             </div>
-
             <div class="error-msg" id="uploadError"></div>
         </div>
 
-        <!-- ===== 查看页面 ===== -->
+        <!-- 查看页面 -->
         <div id="viewPage" class="page">
             <div class="view-logo">来信</div>
             <div class="letter-view" id="letterView">
@@ -1088,9 +1044,7 @@
                     </div>
                     <div style="font-size:clamp(0.7rem,1.5vw,0.9rem);color:#888;margin-top:0.2rem;">输入密码后点击拆信，信件将缓缓显现</div>
                 </div>
-                <!-- 信纸 -->
                 <div class="letter-paper" id="letterPaper">
-                    <!-- 工具栏（右下） -->
                     <div class="toolbar" id="toolbar">
                         <button id="zoomOut" title="缩小">−</button>
                         <span class="zoom-label" id="zoomLabel">100%</span>
@@ -1102,11 +1056,8 @@
                         <button id="viewDual" class="view-btn" data-view="dual">双页</button>
                         <button id="viewContinuous" class="view-btn" data-view="continuous">连续</button>
                     </div>
-                    <!-- 可滚动缩放内容 -->
                     <div class="content-scroll" id="contentScroll">
-                        <div class="inner-content" id="innerContent">
-                            <!-- 动态内容由 JS 生成 -->
-                        </div>
+                        <div class="inner-content" id="innerContent"></div>
                     </div>
                 </div>
             </div>
@@ -1114,7 +1065,6 @@
             <div class="empty-state" id="viewEmpty" style="display:none;"></div>
         </div>
     </div>
-
     <div class="toast" id="toast"></div>
 
     <script>
@@ -1122,7 +1072,7 @@
             'use strict';
 
             // =====================================================
-            //  🔐 配置（使用 Vercel 代理解决跨域）
+            //  🔐 配置（使用 Vercel 代理）
             // =====================================================
             const PROXY_URL = 'https://laixin.vercel.app/api/proxy';
             const WEBDAV_URL = 'https://dav.jianguoyun.com/dav/';
@@ -1152,7 +1102,7 @@
             }
 
             // =====================================================
-            //  存储操作（通过代理）
+            //  存储操作
             // =====================================================
             async function fileExists(filename) {
                 try {
